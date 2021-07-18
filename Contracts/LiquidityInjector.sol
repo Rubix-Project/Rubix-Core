@@ -3,7 +3,7 @@ pragma solidity =0.6.6;
 
 import "./Ownable.sol";
 import "./IBEP20.sol";
-import "./LiquidityInjector.sol";
+import "./ILIQ.sol";
 import "./SafeMath.sol";
 import "./SafeBEP20.sol";
 
