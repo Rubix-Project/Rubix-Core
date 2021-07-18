@@ -92,7 +92,7 @@ contract Lottery is Ownable {
     address[] private PLAYERS;
 
     //Lottery related stuff
-    uint256 constant GAME_LENGTH = 100;
+    uint256 constant GAME_LENGTH = SECONDS_IN_DAY;
     uint256 internal RANDOM_NUMBER;
     uint256 internal TICKET_FEE_wBNB = 0.015 * 10**18; // 0.015 BNB
     uint256 internal TICKET_FEE_RBX = 15 * 10**18; // 15 RBX
