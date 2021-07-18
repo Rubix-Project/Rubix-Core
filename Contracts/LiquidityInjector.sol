@@ -15,7 +15,7 @@ contract PancakeLiquidityInjection is Ownable{
     IBEP20 internal wBNB;
     IPancakeRouter01 internal LIQ;
     IBEP20 internal PancakeSwapLP;
-    uint256 lockDeadline;
+    uint256 internal lockDeadline;
     address internal wBNB2;
     address internal RBX2;
     address internal LIQ2;
