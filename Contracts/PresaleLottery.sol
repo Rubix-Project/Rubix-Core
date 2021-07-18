@@ -77,7 +77,6 @@ contract ITOLotterry is Ownable {
     
     function Contribute(uint256 TICKETS_QTY) public payable {
         require(TICKETS_QTY < 100, "RBX: Maximum limit reached");
-        require(TICKETS[_TICKETS_PURCHASED].TICKETS_PURCHASED <= 100, "RBX: Maximum limit reached");
         require(_TICKETS_PURCHASED.add(TICKETS_QTY) <= 15000, "RBX: Please select another number");
         if(msg.value > 0) {
             require(msg.value >= TICKET_FEE.mul(TICKETS_QTY), "RBX: Incorrect Value");
@@ -109,7 +108,7 @@ contract ITOLotterry is Ownable {
      /* DRAW FUNCTION */
     
     function draw() public {
-        require(deadline < now && _TICKETS_PURCHASED > 50, "RBX: Lottery is not concluded");
+        require(deadline < now && _TICKETS_PURCHASED > GOAL, "RBX: Lottery is not concluded");
         require(VRF.returnRandomness() > 0, "RBX: Randomness is not generated!");
         
         uint256[] memory _Random = expand(VRF.returnRandomness(), 19);
