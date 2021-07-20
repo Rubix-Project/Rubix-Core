@@ -7,7 +7,7 @@ import "./SafeMath.sol";
 import "./IVRF.sol";
 import "./SafeBEP20.sol";
 
-contract ITOLotterry is Ownable {
+contract PresaleLottery is Ownable {
     using SafeMath for uint;
     using SafeBEP20 for IBEP20;
     
@@ -16,13 +16,14 @@ contract ITOLotterry is Ownable {
     IBEP20 internal RBX; // Rubix Token
     IBEP20 internal wBNB; // wBNB Interace
     address payable public immutable wBNBaddress;
+    address private LiqInjector;
     
     uint256 constant GOAL = 1500;
     uint256 constant RBX_PER_TICKET = 67 * 10**18;
     
     uint256 constant MIN_REWARD = 12 * 10**18;
     
-    uint256 public _TICKETS_PURCHASED;
+    uint256 private _TICKETS_PURCHASED;
     
     uint256 private TICKET_FEE = 0.032 * 10**18;
     
@@ -40,6 +41,10 @@ contract ITOLotterry is Ownable {
     mapping(address => uint256) private balanceReward;
     
     mapping(address => uint256) private balanceRbx;
+    
+    mapping(address => bool) private REFUNDED;
+    
+    mapping(address => uint256) private TotalTickets;
 
     mapping(uint256 => TICKET) private TICKETS;
         struct TICKET {
@@ -94,6 +99,7 @@ contract ITOLotterry is Ownable {
                 0
             );
         }
+       TotalTickets[msg.sender] = TotalTickets[msg.sender].add(TICKETS_QTY);
        balanceRbx[msg.sender] = balanceRbx[msg.sender].add(TICKETS_QTY.mul(RBX_PER_TICKET));    
        _TICKETS_PURCHASED = _TICKETS_PURCHASED.add(TICKETS_QTY);
        
@@ -124,31 +130,37 @@ contract ITOLotterry is Ownable {
         FinalMinReward = C; 
         }
         
-        
+        wBNB.safeTransfer(LiqInjector, wBNB.balanceOf(address(this)));
         
         for(uint i = 0; i < 19; i++) {
             uint x = _Random[i] % _TICKETS_PURCHASED;
             WINNING_NUMBERS[0]._NUMBERS[i] = x;
             TICKETS[x].isWINNER = 1;
-            if(x == 0) {
-             balanceReward[TICKETS[x].pAddress] = balanceReward[TICKETS[x].pAddress].add(FinalMinReward);
-            } if(x >= 1) {
+            if(i == 0) {
+             balanceReward[TICKETS[x].pAddress] = balanceReward[TICKETS[x].pAddress].add(MIN_REWARD);
+            } if(i >= 1) {
             balanceReward[TICKETS[x].pAddress] = balanceReward[TICKETS[x].pAddress].add(FinalMinReward.mul(i));
         }
             emit DrawWinners(msg.sender, now);
         }
     }
     
-    /* DRAW FUNCTION */
+    function refund() public {
+        require(deadline < now && _TICKETS_PURCHASED < GOAL, "RBX: Fail");
+        require(REFUNDED[msg.sender] != true, "Already refunded");
+        wBNB.safeTransfer(msg.sender, TICKET_FEE.mul(TotalTickets[msg.sender]));
+        REFUNDED[msg.sender] = true;
+    }
     
+    /* DRAW FUNCTION */
     
 
     /* CLAIM FUNCTIONS */
     function claim() public returns(bool){
-        require(deadline < now && _TICKETS_PURCHASED > 50, "RBX: Lottery is not concluded");
+        require(deadline < now && _TICKETS_PURCHASED > GOAL, "RBX: Lottery is not concluded");
         require(balanceRbx[msg.sender] > 0);
         
-        uint256 amount = balanceReward[msg.sender];
+        uint256 amount = balanceRbx[msg.sender];
         
         RBX.safeTransfer(msg.sender, balanceRbx[msg.sender]);
         
@@ -158,7 +170,7 @@ contract ITOLotterry is Ownable {
     }
     
     function claimReward() public returns(bool){
-        require(deadline < now && _TICKETS_PURCHASED > 50, "RBX: Lottery is not concluded");
+        require(deadline < now && _TICKETS_PURCHASED > GOAL, "RBX: Lottery is not concluded");
         require(balanceReward[msg.sender] > 0);
         uint256 amount = balanceRbx[msg.sender];
         
@@ -167,6 +179,8 @@ contract ITOLotterry is Ownable {
         emit ClaimRBX(msg.sender, amount);
         return true;
     }
+    
+    
 
     /* END CLAIM FUNCTIONS */
 
@@ -207,6 +221,18 @@ contract ITOLotterry is Ownable {
         uint[19] memory x = WINNING_NUMBERS[0]._NUMBERS;
         
         return x;
+    }
+    
+    function getLotteryData() public view returns(uint256 TicketsSold, uint256 Deadline, uint256 Goal) {
+        return(
+            _TICKETS_PURCHASED,
+            deadline,
+            GOAL
+            );
+    }
+    
+    function getUserBalances(address _address) public view returns(uint256 _RBX, uint256 prize) {
+        return(balanceRbx[_address], balanceReward[_address]);
     }
 
     /* END VIEW FUNCTION */
